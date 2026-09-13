@@ -1,2 +1,11 @@
 ###
-http://localhost:3001/
+GET http://localhost:3001/
+
+###
+POST http://localhost:3001/users
+Content-Type: application/json
+
+{
+    "email": "test@test.com",
+    "password": "qwerty"
+}
