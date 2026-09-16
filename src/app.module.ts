@@ -3,8 +3,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 
 import { UsersModule } from './users/users.module';
-import { PrismaService } from './prisma/prisma.service';
-import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -36,9 +34,7 @@ import { PrismaModule } from './prisma/prisma.module';
           : `.env.${process.env.NODE_ENV ?? 'development'}`,
     }),
     UsersModule,
-    PrismaModule,
   ],
   controllers: [],
-  providers: [PrismaService],
 })
 export class AppModule {}
