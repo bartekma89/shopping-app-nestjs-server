@@ -14,6 +14,6 @@ export class ZodValidationPipe implements PipeTransform {
       });
     }
 
-    return value;
+    return result.data;
   }
 }
