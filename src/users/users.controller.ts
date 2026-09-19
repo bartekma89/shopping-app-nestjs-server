@@ -1,6 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { type TCreateUsersDto, createUsers } from './dto/user.dto';
+import { type CredentialsDto, credentialSchema } from '../dtos/users.dto';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 
 @Controller('users')
@@ -10,7 +10,9 @@ export class UsersController {
   // it can be use if the data would be a formData type
   // @UseInterceptors(NoFilesInterceptor())
   @Post()
-  createUsers(@Body(new ZodValidationPipe(createUsers)) body: TCreateUsersDto) {
+  createUsers(
+    @Body(new ZodValidationPipe(credentialSchema)) body: CredentialsDto,
+  ) {
     return this.userService.createUsers(body);
   }
 }

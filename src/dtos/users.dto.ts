@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const createUsers = z.object({
+export const credentialSchema = z.object({
   email: z.email({
     error: 'Enter a valid email',
   }),
@@ -9,4 +9,4 @@ export const createUsers = z.object({
   }),
 });
 
-export type TCreateUsersDto = z.infer<typeof createUsers>;
+export type CredentialsDto = z.infer<typeof credentialSchema>;

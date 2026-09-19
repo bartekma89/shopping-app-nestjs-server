@@ -1,14 +1,14 @@
 import { Injectable, UnprocessableEntityException } from '@nestjs/common';
-import { TCreateUsersDto } from './dto/user.dto';
+import { type CredentialsDto } from '../dtos/users.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { hash } from 'argon2';
-import { Prisma } from '../generated/prisma/client';
+import { Prisma, User } from '../generated/prisma/client';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async createUsers(data: TCreateUsersDto) {
+  async createUsers(data: CredentialsDto): Promise<Pick<User, 'id' | 'email'>> {
     try {
       return await this.prismaService.user.create({
         data: {
@@ -30,5 +30,25 @@ export class UsersService {
 
       throw error;
     }
+  }
+
+  async findOne(email: string): Promise<User | null> {
+    return this.prismaService.user.findUnique({
+      where: {
+        email,
+      },
+    });
+  }
+
+  async findById(id: number): Promise<Pick<User, 'id' | 'email'> | null> {
+    return this.prismaService.user.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        email: true,
+        id: true,
+      },
+    });
   }
 }

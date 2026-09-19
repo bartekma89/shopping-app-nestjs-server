@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 
 import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { UsersModule } from './users/users.module';
           : `.env.${process.env.NODE_ENV ?? 'development'}`,
     }),
     UsersModule,
+    AuthModule,
   ],
   controllers: [],
 })
