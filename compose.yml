@@ -10,6 +10,8 @@ services:
       - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
     volumes:
       - postgres-data:/var/lib/postgresql
+    networks:
+      - pg-network
   pgadmin:
     image: dpage/pgadmin4:9.17
     container_name: pgadmin-c
@@ -25,7 +27,12 @@ services:
       - '127.0.0.1:8080:80'
     depends_on:
       - postgres
+    networks:
+      - pg-network
 
 volumes:
   postgres-data:
   pgadmin-data:
+
+networks:
+  pg-network:
