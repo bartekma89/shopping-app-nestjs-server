@@ -3,8 +3,9 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import argon from 'argon2';
 import { JwtService } from '@nestjs/jwt';
-import { User } from '../generated/prisma/client';
 import { ConfigService } from '@nestjs/config';
+import { PublicUser, TokenPayload } from './types';
+import { ACCESS_COOKIE } from '../constants';
 
 @Injectable()
 export class AuthService {
@@ -18,18 +19,18 @@ export class AuthService {
     email: string,
     password: string,
     res: Response,
-  ): Promise<Pick<User, 'id' | 'email'>> {
+  ): Promise<PublicUser> {
     const user = await this.usersService.findOne(email);
 
     if (!user || !(await argon.verify(user.password, password))) {
       throw new UnauthorizedException('Credentials are not valid');
     }
 
-    const payload = { sub: user.id, email: user.email };
+    const payload: TokenPayload = { sub: user.id };
 
     const token = this.jwtService.sign(payload);
 
-    res.cookie('jwt_token', token, {
+    res.cookie(ACCESS_COOKIE, token, {
       expires: new Date(
         Date.now() +
           Number(this.configService.getOrThrow<string>('JWT_EXPIRATION_MS')),
@@ -39,9 +40,6 @@ export class AuthService {
       sameSite: 'lax',
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _password, ...result } = user;
-
-    return result;
+    return { id: user.id, email: user.email };
   }
 }

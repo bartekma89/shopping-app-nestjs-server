@@ -1,5 +1,5 @@
 ###
-GET http://localhost:3001/
+GET http://localhost:3001/users/me
 
 ###
 POST http://localhost:3001/users
@@ -18,4 +18,3 @@ Content-Type: application/json
     "email": "test2@test.com",
     "password": "qwerty"
 }
-

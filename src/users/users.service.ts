@@ -3,12 +3,13 @@ import { type CredentialsDto } from '../dtos/users.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { hash } from 'argon2';
 import { Prisma, User } from '../generated/prisma/client';
+import type { PublicUser } from '../auth/types';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async createUsers(data: CredentialsDto): Promise<Pick<User, 'id' | 'email'>> {
+  async createUser(data: CredentialsDto): Promise<PublicUser> {
     try {
       return await this.prismaService.user.create({
         data: {
@@ -16,8 +17,8 @@ export class UsersService {
           password: await hash(data.password),
         },
         select: {
-          email: true,
           id: true,
+          email: true,
         },
       });
     } catch (error: unknown) {
@@ -25,7 +26,10 @@ export class UsersService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new UnprocessableEntityException('Email already exists.');
+        throw new UnprocessableEntityException({
+          message: 'Validation failed',
+          errors: { email: ['Email already exists.'] },
+        });
       }
 
       throw error;
@@ -40,14 +44,14 @@ export class UsersService {
     });
   }
 
-  async findById(id: number): Promise<Pick<User, 'id' | 'email'> | null> {
+  async findById(id: number): Promise<PublicUser | null> {
     return this.prismaService.user.findUnique({
       where: {
         id,
       },
       select: {
-        email: true,
         id: true,
+        email: true,
       },
     });
   }
