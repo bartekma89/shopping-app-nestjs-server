@@ -18,3 +18,16 @@ Content-Type: application/json
     "email": "test2@test.com",
     "password": "qwerty"
 }
+
+###
+POST http://localhost:3001/products
+Content-Type: application/json
+
+{
+ "name": "Shoes",
+ "description": "wfrefrfer",
+ "price": 213.99
+}
+
+###
+GET http://localhost:3001/products
