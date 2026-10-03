@@ -26,7 +26,7 @@ Content-Type: application/json
 {
  "name": "Shoes",
  "description": "wfrefrfer",
- "price": 213.99
+ "priceCents": 21399
 }
 
 ###

@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
 export const ProductSchema = z.object({
-  name: z.string({
+  name: z.string().trim().min(1, {
     error: 'Name required',
   }),
-  description: z.string({
+  description: z.string().trim().min(1, {
     error: 'Description required',
   }),
-  price: z.number({
-    error: 'Price required',
+  priceCents: z.int({ error: 'Price must be an integer (cents)' }).positive({
+    error: 'Price must be a positive number',
   }),
 });
 

@@ -12,10 +12,6 @@ export class ProductsService {
     body: ProductDto,
     userId: PublicUser['id'],
   ): Promise<Product> {
-    console.log({
-      ...body,
-      userId,
-    });
     return this.prismaService.product.create({
       data: {
         ...body,
