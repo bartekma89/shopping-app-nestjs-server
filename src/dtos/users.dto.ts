@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const credentialSchema = z.object({
+export const CredentialSchema = z.object({
   email: z.email({
     error: 'Enter a valid email',
   }),
@@ -9,4 +9,4 @@ export const credentialSchema = z.object({
   }),
 });
 
-export type CredentialsDto = z.infer<typeof credentialSchema>;
+export type CredentialsDto = z.infer<typeof CredentialSchema>;

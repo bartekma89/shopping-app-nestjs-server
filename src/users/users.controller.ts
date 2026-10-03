@@ -8,7 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { type CredentialsDto, credentialSchema } from '../dtos/users.dto';
+import { type CredentialsDto, CredentialSchema } from '../dtos/users.dto';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import type { PublicUser } from '../auth/types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -22,7 +22,7 @@ export class UsersController {
   // @UseInterceptors(NoFilesInterceptor())
   @Post()
   createUser(
-    @Body(new ZodValidationPipe(credentialSchema)) body: CredentialsDto,
+    @Body(new ZodValidationPipe(CredentialSchema)) body: CredentialsDto,
   ) {
     return this.userService.createUser(body);
   }
