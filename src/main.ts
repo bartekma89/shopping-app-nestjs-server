@@ -14,4 +14,6 @@ async function bootstrap() {
   });
   await app.listen(app.get(ConfigService).get<number>('PORT', 3001));
 }
+
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 bootstrap();

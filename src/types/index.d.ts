@@ -1,3 +1,5 @@
+import '@nestjs/platform-express/multer/index';
+
 import { PublicUser } from '../auth/types';
 
 declare global {
