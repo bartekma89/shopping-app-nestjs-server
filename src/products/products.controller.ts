@@ -6,7 +6,6 @@ import {
   MaxFileSizeValidator,
   Param,
   ParseFilePipe,
-  ParseIntPipe,
   Post,
   UploadedFile,
   UseGuards,
@@ -20,6 +19,7 @@ import { ProductsService } from './products.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MAX_IMAGE_SIZE } from '../constants';
+import { ParseIdPipe } from '../common/pipes/parse-id.pipe';
 
 @Controller('products')
 export class ProductsController {
@@ -38,6 +38,12 @@ export class ProductsController {
   @UseGuards(JwtAuthGuard)
   getProducts() {
     return this.productsService.getProducts();
+  }
+
+  @Get(':productId')
+  @UseGuards(JwtAuthGuard)
+  getProduct(@Param('productId', ParseIdPipe) productId: number) {
+    return this.productsService.getProduct(productId);
   }
 
   @Post(':productId/image')
@@ -62,7 +68,7 @@ export class ProductsController {
       }),
     )
     file: Express.Multer.File,
-    @Param('productId', ParseIntPipe) productId: number,
+    @Param('productId', ParseIdPipe) productId: number,
     @CurrentUser() user: PublicUser,
   ) {
     return this.productsService.uploadProductImage(file, productId, user.id);

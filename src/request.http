@@ -33,6 +33,9 @@ Content-Type: application/json
 GET http://localhost:3001/products
 
 ###
+GET http://localhost:3001/products/22
+
+###
 POST http://localhost:3001/products/1/image
 Content-Type: multipart/form-data; boundary=WebAppBoundary
 

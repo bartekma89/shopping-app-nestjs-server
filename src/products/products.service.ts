@@ -32,6 +32,20 @@ export class ProductsService {
     return this.prismaService.product.findMany();
   }
 
+  async getProduct(id: number): Promise<Product> {
+    const product = await this.prismaService.product.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product ${id} does not exist`);
+    }
+
+    return product;
+  }
+
   async uploadProductImage(
     file: Express.Multer.File,
     productId: number,
