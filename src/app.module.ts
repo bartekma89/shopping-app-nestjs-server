@@ -7,12 +7,14 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
 import { PRODUCT_IMAGES_DIR } from './constants';
+import { CheckoutModule } from './checkout/checkout.module';
 
 @Module({
   imports: [
     LoggerModule.forRootAsync({
       useFactory: (configService: ConfigService) => {
-        const isProduction = configService.get('NODE_ENV') === 'production';
+        const isProduction =
+          configService.get<string>('NODE_ENV') === 'production';
 
         return {
           pinoHttp: {
@@ -29,7 +31,6 @@ import { PRODUCT_IMAGES_DIR } from './constants';
       },
       inject: [ConfigService],
     }),
-
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath:
@@ -44,6 +45,7 @@ import { PRODUCT_IMAGES_DIR } from './constants';
     UsersModule,
     AuthModule,
     ProductsModule,
+    CheckoutModule,
   ],
   controllers: [],
 })

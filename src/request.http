@@ -33,7 +33,7 @@ Content-Type: application/json
 GET http://localhost:3001/products
 
 ###
-GET http://localhost:3001/products/22
+GET http://localhost:3001/products/2
 
 ###
 POST http://localhost:3001/products/1/image
@@ -45,3 +45,11 @@ Content-Type: image/jpeg
 
 < ./fixtures/test-image.jpg
 --WebAppBoundary--
+
+###
+POST http://localhost:3001/checkout/session
+Content-Type: application/json
+
+{
+    "productId": 2
+}
