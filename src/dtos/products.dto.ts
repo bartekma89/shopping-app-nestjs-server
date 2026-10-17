@@ -13,3 +13,9 @@ export const ProductSchema = z.object({
 });
 
 export type ProductDto = z.infer<typeof ProductSchema>;
+
+export const GetProductsQuerySchema = z.object({
+  status: z.enum(['available', 'sold']).optional(),
+});
+
+export type GetProductsQueryDto = z.infer<typeof GetProductsQuerySchema>;

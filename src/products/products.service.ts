@@ -1,9 +1,10 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { ProductDto } from '../dtos/products.dto';
+import { GetProductsQueryDto, ProductDto } from '../dtos/products.dto';
 import { PublicUser } from '../auth/types';
 import { PrismaService } from '../prisma/prisma.service';
 import { Product } from '../generated/prisma/client';
@@ -14,6 +15,8 @@ import { join } from 'node:path';
 
 @Injectable()
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name);
+
   constructor(private readonly prismaService: PrismaService) {}
 
   async createProduct(
@@ -28,8 +31,11 @@ export class ProductsService {
     });
   }
 
-  async getProducts(): Promise<Product[]> {
-    return this.prismaService.product.findMany();
+  async getProducts(query: GetProductsQueryDto): Promise<Product[]> {
+    const { status } = query;
+    return this.prismaService.product.findMany({
+      where: status ? { sold: status === 'sold' } : undefined,
+    });
   }
 
   async getProduct(id: number): Promise<Product> {
@@ -86,5 +92,22 @@ export class ProductsService {
         id: productId,
       },
     });
+  }
+
+  async markAsSold(id: number) {
+    try {
+      const product = await this.prismaService.product.update({
+        where: {
+          id,
+        },
+        data: {
+          sold: true,
+        },
+      });
+
+      return product;
+    } catch {
+      this.logger.warn(`Product: ${id} does not exist`);
+    }
   }
 }

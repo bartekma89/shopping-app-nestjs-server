@@ -26,5 +26,6 @@ model Product {
   priceCents  Int
   user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      Int
+  sold        Boolean @default(false)
   imageKey    String?
 }

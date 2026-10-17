@@ -7,13 +7,19 @@ import {
   Param,
   ParseFilePipe,
   Post,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
-import { type ProductDto, ProductSchema } from '../dtos/products.dto';
+import {
+  type GetProductsQueryDto,
+  GetProductsQuerySchema,
+  type ProductDto,
+  ProductSchema,
+} from '../dtos/products.dto';
 import { type PublicUser } from '../auth/types';
 import { ProductsService } from './products.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -36,8 +42,11 @@ export class ProductsController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  getProducts() {
-    return this.productsService.getProducts();
+  getProducts(
+    @Query(new ZodValidationPipe(GetProductsQuerySchema))
+    query: GetProductsQueryDto,
+  ) {
+    return this.productsService.getProducts(query);
   }
 
   @Get(':productId')
