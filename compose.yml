@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:18
+    image: postgres:18.1
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is not set}
@@ -8,31 +8,64 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is not set}
     ports:
       - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     volumes:
       - postgres-data:/var/lib/postgresql
     networks:
-      - pg-network
+      - services-network
   pgadmin:
     image: dpage/pgadmin4:9.17
-    container_name: pgadmin-c
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:?}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?}
-      PGADMIN_CONFIG_SERVER_MODE: ${PGADMIN_CONFIG_SERVER_MODE}
-      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: ${PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:?PGADMIN_DEFAULT_EMAIL is not set}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?PGADMIN_DEFAULT_PASSWORD is not set}
+      PGADMIN_CONFIG_SERVER_MODE: ${PGADMIN_CONFIG_SERVER_MODE:-False}
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: ${PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED:-False}
     volumes:
       - pgadmin-data:/var/lib/pgadmin
     ports:
-      - '127.0.0.1:8080:80'
+      - '127.0.0.1:${PGADMIN_PORT:-8080}:80'
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
-      - pg-network
+      - services-network
+  redis:
+    image: redis:8.10-alpine
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${REDIS_PORT:-6379}:6379'
+    command:
+      [
+        'redis-server',
+        '--appendonly',
+        'yes',
+        '--appendfsync',
+        'everysec',
+        '--maxmemory',
+        '256mb',
+        '--maxmemory-policy',
+        'noeviction',
+      ]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redis-data:/data
+    networks:
+      - services-network
 
 volumes:
   postgres-data:
   pgadmin-data:
+  redis-data:
 
 networks:
-  pg-network:
+  services-network:
