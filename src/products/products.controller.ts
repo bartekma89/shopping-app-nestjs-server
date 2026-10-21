@@ -8,9 +8,11 @@ import {
   ParseFilePipe,
   Post,
   Query,
+  Sse,
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  MessageEvent,
 } from '@nestjs/common';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
@@ -26,10 +28,37 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MAX_IMAGE_SIZE } from '../constants';
 import { ParseIdPipe } from '../common/pipes/parse-id.pipe';
+import { filter, map, Observable, takeUntil, timer } from 'rxjs';
+import { ProductEventService } from './product-event.service';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly productEventService: ProductEventService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  @Sse('events')
+  @UseGuards(JwtAuthGuard)
+  events(@CurrentUser() user: PublicUser): Observable<MessageEvent> {
+    return this.productEventService.stream().pipe(
+      filter((event) => {
+        if (event.type !== 'product.purchased') {
+          return true;
+        }
+
+        return event.recipientId === user.id;
+      }),
+      map(({ type, ...data }) => ({ type, data })),
+      takeUntil(
+        timer(
+          Number(this.configService.getOrThrow<string>('JWT_EXPIRATION_MS')),
+        ),
+      ),
+    );
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard)

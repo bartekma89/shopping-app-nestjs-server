@@ -14,6 +14,7 @@ async function bootstrap() {
     origin: app.get(ConfigService).get<string>('CLIENT_URL'),
     credentials: true,
   });
+  app.enableShutdownHooks();
   await app.listen(app.get(ConfigService).get<number>('PORT', 3001));
 }
 

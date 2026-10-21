@@ -7,28 +7,39 @@ import {
 import { GetProductsQueryDto, ProductDto } from '../dtos/products.dto';
 import { PublicUser } from '../auth/types';
 import { PrismaService } from '../prisma/prisma.service';
-import { Product } from '../generated/prisma/client';
+import { Prisma, Product } from '../generated/prisma/client';
 import { MIME_TYPES_EXTENSIONS, PRODUCT_IMAGES_DIR } from '../constants';
 import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { ProductEventService } from './product-event.service';
 
 @Injectable()
 export class ProductsService {
   private readonly logger = new Logger(ProductsService.name);
 
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly productEventService: ProductEventService,
+  ) {}
 
   async createProduct(
     body: ProductDto,
     userId: PublicUser['id'],
   ): Promise<Product> {
-    return this.prismaService.product.create({
+    const product = await this.prismaService.product.create({
       data: {
         ...body,
         userId,
       },
     });
+
+    this.productEventService.emit({
+      type: 'product.created',
+      product,
+    });
+
+    return product;
   }
 
   async getProducts(query: GetProductsQueryDto): Promise<Product[]> {
@@ -99,15 +110,38 @@ export class ProductsService {
       const product = await this.prismaService.product.update({
         where: {
           id,
+          sold: false,
         },
         data: {
           sold: true,
         },
       });
 
+      this.productEventService.emit({
+        type: 'product.sold',
+        productId: product.id,
+        sellerId: product.userId,
+      });
+
+      this.productEventService.emit({
+        type: 'product.purchased',
+        name: product.name,
+        priceCents: product.priceCents,
+        productId: product.id,
+        recipientId: product.userId,
+      });
+
       return product;
-    } catch {
-      this.logger.warn(`Product: ${id} does not exist`);
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        this.logger.warn(`Product: ${id} not found or has been sold`);
+        return;
+      }
+
+      throw error;
     }
   }
 }
