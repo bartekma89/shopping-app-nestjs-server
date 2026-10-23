@@ -2,5 +2,9 @@ allowBuilds:
   '@parcel/watcher': true
   '@prisma/engines': true
   argon2: true
+  msgpackr-extract: true
   prisma: true
   unrs-resolver: true
+permissions:
+  dotenv:
+    skills: false

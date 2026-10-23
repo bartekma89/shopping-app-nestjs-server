@@ -24,6 +24,7 @@
     "test:e2e": "cross-env NODE_ENV=test jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@nestjs/bullmq": "^12.0.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^12.0.0",
     "@nestjs/core": "^11.0.1",
@@ -33,8 +34,10 @@
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "7.10.0",
     "argon2": "^0.45.1",
+    "bullmq": "^6.3.19",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
+    "ioredis": "^6.0.0",
     "nestjs-pino": "^5.1.0",
     "pg": "^8.23.0",
     "pino-http": "^11.0.0",

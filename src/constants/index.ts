@@ -11,3 +11,5 @@ export const MIME_TYPES_EXTENSIONS: Partial<Record<string, string>> = {
 export const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
 export const PRODUCT_IMAGES_DIR = join(process.cwd(), 'public', 'products');
+
+export const STRIPE_WEBHOOK_QUEUE = 'stripe_webhooks';

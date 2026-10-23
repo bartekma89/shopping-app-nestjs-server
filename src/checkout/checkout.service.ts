@@ -9,12 +9,21 @@ import Stripe from 'stripe';
 import { ProductsService } from '../products/products.service';
 import { ConfigService } from '@nestjs/config';
 import { CheckoutSessionResponse } from './types';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { STRIPE_WEBHOOK_QUEUE } from '../constants';
+
+const HANDLED_EVENTS = new Set<Stripe.Event.Type>([
+  'checkout.session.completed',
+  'checkout.session.async_payment_succeeded',
+]);
 
 @Injectable()
 export class CheckoutService {
   private readonly logger = new Logger(CheckoutService.name);
 
   constructor(
+    @InjectQueue(STRIPE_WEBHOOK_QUEUE) private readonly webhookQueue: Queue,
     private readonly stripe: Stripe,
     private readonly productsService: ProductsService,
     private readonly configService: ConfigService,
@@ -75,27 +84,19 @@ export class CheckoutService {
       throw new BadRequestException('Invalid Stripe signature');
     }
 
-    switch (event.type) {
-      case 'checkout.session.completed':
-      case 'checkout.session.async_payment_succeeded': {
-        const session = event.data.object;
-
-        if (session.payment_status !== 'paid') {
-          return;
-        }
-
-        const productId = Number(session.metadata?.productId);
-
-        if (!Number.isInteger(productId)) {
-          this.logger.error(`Invalid productId ${productId}`);
-          return;
-        }
-        await this.productsService.markAsSold(productId);
-
-        return;
-      }
-      default:
-        return;
+    if (!HANDLED_EVENTS.has(event.type)) {
+      return;
     }
+
+    await this.webhookQueue.add(event.type, event, {
+      jobId: event.id,
+      attempts: 5,
+      backoff: {
+        type: 'exponential',
+        delay: 1000,
+      },
+      removeOnComplete: { age: 24 * 3600 },
+      removeOnFail: { age: 7 * 24 * 3600 },
+    });
   }
 }
