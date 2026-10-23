@@ -1,98 +1,133 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Shopping Server
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend API for a small marketplace. Users sign up, list products with images, and buy them through Stripe Checkout. A Stripe webhook marks a product as sold, and connected clients get the update in real time over Server-Sent Events.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+This is the server half of a Next.js + NestJS shopping app.
 
-## Description
+## Features
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **Authentication**: email/password sign-up with Argon2 password hashing, and JWT login stored in an HTTP-only `Authentication` cookie.
+- **Products**: create, list and view products, and upload a product image (JPEG, PNG or WebP, up to 10 MB). Images are served statically from `/products`.
+- **Checkout**: creates a Stripe Checkout session for a product.
+- **Stripe webhooks**: the endpoint verifies the Stripe signature against the raw request body, then queues the event in BullMQ (Redis). A worker marks the product as sold once payment completes.
+- **Real-time updates**: product events are streamed to clients over SSE.
+- **Validation**: request DTOs are validated with Zod schemas through a custom pipe.
+- **Logging**: structured request logging with Pino (pretty-printed outside production).
 
-## Project setup
+## Tech stack
 
-```bash
-$ pnpm install
+| Area           | Technology                                                    |
+| -------------- | ------------------------------------------------------------- |
+| Runtime        | Node.js, TypeScript                                           |
+| Framework      | NestJS 11 (Express)                                           |
+| Database       | PostgreSQL 18                                                 |
+| ORM            | Prisma 7 (`prisma-client` generator, `@prisma/adapter-pg`)    |
+| Auth           | `@nestjs/jwt`, Argon2, `cookie-parser`                        |
+| Payments       | Stripe                                                        |
+| Job queue      | BullMQ + Redis 8 (`@nestjs/bullmq`)                           |
+| Validation     | Zod 4                                                         |
+| Logging        | Pino (`nestjs-pino`, `pino-pretty`)                           |
+| Static files   | `@nestjs/serve-static`                                        |
+| Testing        | Jest, Supertest                                               |
+| Tooling        | pnpm, ESLint, Prettier                                        |
+| Infrastructure | Podman/Docker Compose (PostgreSQL, pgAdmin, Redis)            |
+
+## API overview
+
+| Method | Path                           | Auth | Description                          |
+| ------ | ------------------------------ | ---- | ------------------------------------ |
+| POST   | `/users`                       | –    | Register a new user                  |
+| GET    | `/users/me`                    | JWT  | Get the current user                 |
+| POST   | `/auth/login`                  | –    | Log in and set the auth cookie       |
+| POST   | `/products`                    | JWT  | Create a product                     |
+| GET    | `/products`                    | JWT  | List products                        |
+| GET    | `/products/:productId`         | JWT  | Get a single product                 |
+| POST   | `/products/:productId/image`   | JWT  | Upload a product image               |
+| SSE    | `/products/events`             | JWT  | Stream product events                |
+| POST   | `/checkout/session`            | JWT  | Create a Stripe Checkout session     |
+| POST   | `/checkout/webhook`            | –    | Stripe webhook (signature-verified)  |
+
+Example requests are in [`src/request.http`](src/request.http).
+
+## Project structure
+
+```
+src/
+├── auth/        # login, JWT guard, @CurrentUser decorator
+├── users/       # registration and current user
+├── products/    # products CRUD, image upload, SSE events
+├── checkout/    # Stripe sessions, webhook, BullMQ processor
+├── prisma/      # PrismaService
+├── common/      # shared pipes (Zod validation, ID parsing)
+├── dtos/        # Zod schemas / DTOs
+└── constants/
+prisma/
+├── schema.prisma
+└── migrations/
 ```
 
-## Compile and run the project
+## Getting started
+
+### Prerequisites
+
+- Node.js and pnpm
+- Podman (or Docker) with Compose
+- A Stripe account (test mode) and the Stripe CLI for forwarding webhooks locally
+
+### Environment variables
+
+The app loads `.env.<NODE_ENV>` (e.g. `.env.development`, `.env.test`), or `.env` in production.
+
+| Variable                   | Description                                    |
+| -------------------------- | ---------------------------------------------- |
+| `PORT`                     | HTTP port (default `3001`)                     |
+| `CLIENT_URL`               | Frontend origin allowed by CORS                |
+| `DATABASE_URL`             | PostgreSQL connection string                   |
+| `JWT_SECRET`               | Secret used to sign JWTs                       |
+| `JWT_EXPIRATION_MS`        | Token/cookie lifetime in milliseconds          |
+| `REDIS_HOST`, `REDIS_PORT` | Redis connection for BullMQ                    |
+| `STRIPE_SECRET_KEY`        | Stripe API secret key                          |
+| `STRIPE_WEBHOOK_SECRET`    | Signing secret for the webhook endpoint        |
+| `STRIPE_SUCCESS_URL`       | Redirect after successful payment              |
+| `STRIPE_CANCEL_URL`        | Redirect after cancelled payment               |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT` | Compose: PostgreSQL container |
+| `PGADMIN_DEFAULT_EMAIL`, `PGADMIN_DEFAULT_PASSWORD`, `PGADMIN_PORT`  | Compose: pgAdmin container    |
+
+### Run locally
 
 ```bash
-# development
-$ pnpm run start
+# install dependencies
+pnpm install
 
-# watch mode
-$ pnpm run start:dev
+# start PostgreSQL, pgAdmin and Redis
+pnpm db:up
 
-# production mode
-$ pnpm run start:prod
+# apply migrations and generate the Prisma client
+pnpm db:migrate
+pnpm db:generate
+
+# start the API in watch mode
+pnpm start:dev
+
+# forward Stripe webhooks to the local server (separate terminal)
+stripe listen --forward-to localhost:3001/checkout/webhook
 ```
 
-## Run tests
+Stop the containers with `pnpm db:down`.
 
-```bash
-# unit tests
-$ pnpm run test
+## Scripts
 
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+| Script            | Description                          |
+| ----------------- | ------------------------------------ |
+| `pnpm start:dev`  | Start in watch mode                  |
+| `pnpm start:prod` | Run the compiled build               |
+| `pnpm build`      | Compile to `dist/`                   |
+| `pnpm test`       | Unit tests                           |
+| `pnpm test:e2e`   | End-to-end tests                     |
+| `pnpm test:cov`   | Test coverage                        |
+| `pnpm lint`       | Lint and auto-fix                    |
+| `pnpm format`     | Format with Prettier                 |
+| `pnpm db:up`      | Start Compose services               |
+| `pnpm db:down`    | Stop Compose services                |
+| `pnpm db:migrate` | Run Prisma migrations (dev)          |
+| `pnpm db:generate`| Generate the Prisma client           |
