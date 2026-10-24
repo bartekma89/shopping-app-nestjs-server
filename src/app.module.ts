@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
 import { PRODUCT_IMAGES_DIR } from './constants';
 import { CheckoutModule } from './checkout/checkout.module';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -57,6 +58,6 @@ import { CheckoutModule } from './checkout/checkout.module';
     ProductsModule,
     CheckoutModule,
   ],
-  controllers: [],
+  controllers: [HealthController],
 })
 export class AppModule {}

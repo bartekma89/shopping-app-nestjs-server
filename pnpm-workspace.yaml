@@ -5,6 +5,7 @@ allowBuilds:
   msgpackr-extract: true
   prisma: true
   unrs-resolver: true
+  esbuild: true
 permissions:
   dotenv:
     skills: false
